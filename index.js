@@ -2,9 +2,11 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const db = require('./database/db');
+const authenticateToken = require('./authentication/middleware');
 const roleRoutes = require('./routes/roleRoutes');
 const userRoutes = require('./routes/userRoutes');
 const searchRoutes = require('./routes/searchRoutes');
+require('dotenv').config();
 
 
 const app = express();
@@ -14,8 +16,10 @@ app.use(cors());
 const PORT = process.env.PORT;
 
 app.use('/search', searchRoutes);
+app.use('/role', roleRoutes);
+app.use('/user', userRoutes);
 
-app.get('/', userRoutes, roleRoutes, (req, res) => {
+app.get('/', (req, res) => {
     res.json({Messsage: 'NCF Repository Backend Running!'});
 });
 

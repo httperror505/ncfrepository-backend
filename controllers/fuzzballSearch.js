@@ -2,8 +2,13 @@ const fuzzball = require('fuzzball');
 const db = require('../database/db');
 
 const fuzzballSearch = (req, res) => {
-    const { searchTerm } = req.body;
-    const query = `
+    const { query } = req.body;
+
+    // Record the start time
+    const startTime = Date.now();
+
+    // Fetch documents from the database
+    db.query(`
         SELECT 
             d.document_id,
             d.title,
@@ -14,59 +19,47 @@ const fuzzballSearch = (req, res) => {
             c.category_name,
             dt.doctype_name,
             dep.department_name,
-            co.course_name
-        FROM document d
-        JOIN category c ON d.category_id = c.category_id
-        JOIN doctype dt ON d.doctype_id = dt.doctype_id
-        JOIN department dep ON d.department_id = dep.department_id
-        JOIN course co ON d.course_id = co.course_id
-    `;
-
-    db.query(query, (error, results) => {
-        if (error) {
-            console.error('Error executing query:', error);
-            res.status(500).json({ error: 'An error occurred while searching documents' });
+            co.course_name 
+        FROM 
+            document d 
+        JOIN 
+            category c ON d.category_id = c.category_id 
+        JOIN 
+            doctype dt ON d.doctype_id = dt.doctype_id 
+        JOIN 
+            department dep ON d.department_id = dep.department_id 
+        JOIN 
+            course co ON d.course_id = co.course_id
+    `, (err, results) => {
+        if (err) {
+            console.error('Error fetching documents from database: ', err);
+            res.status(500).json({ error: 'Fetch Document Endpoint Error' });
             return;
         }
 
-        // Perform fuzzy search and sort results by similarity ratio
-        const matchedDocuments = results
-            .filter(doc => doc.title) // Filter out documents with undefined titles
-            .map((doc, index) => {
-                // Ensure doc.title exists before performing operations
-                const titleRatio = fuzzball.ratio(searchTerm, doc.title);
-                const authorRatio = fuzzball.ratio(searchTerm, doc.author || '');
-                const abstractRatio = fuzzball.ratio(searchTerm, doc.abstract || '');
+        // Prepare data for fuzzball
+        const fuzzballOptions = {
+            scorer: fuzzball.token_set_ratio,
+            limit: 10, // Adjust the limit according to your needs
+            processor: choice => [choice] // Keep the format consistent with Fuse.js
+        };
 
-                // Calculate an average similarity ratio for the document
-                const avgRatio = (titleRatio + authorRatio + abstractRatio) / 3;
+        // Perform the search
+        const fuzzballResults = fuzzball.extract(query, results, fuzzballOptions);
 
-                return {
-                    item: {
-                        document_id: doc.document_id,
-                        title: doc.title,
-                        author: doc.author,
-                        publish_date: doc.publish_date,
-                        abstract: doc.abstract,
-                        citation: doc.citation,
-                        category_name: doc.category_name,
-                        doctype_name: doc.doctype_name,
-                        department_name: doc.department_name,
-                        course_name: doc.course_name
-                    },
-                    refIndex: index,
-                    similarityRatio: avgRatio // Include similarity ratio for reference
-                };
-            });
+        // Sort the search results based on their score (similarity)
+        fuzzballResults.sort((a, b) => b[1] - a[1]);
 
-        // Adjust the threshold value here (e.g., 70)
-        const threshold = 75;
-        const filteredDocuments = matchedDocuments.filter(doc => doc.similarityRatio >= threshold);
+        // Record the end time
+        const endTime = Date.now();
 
-        // Sort the filtered documents by similarity ratio
-        filteredDocuments.sort((a, b) => b.similarityRatio - a.similarityRatio);
+        // Calculate the execution time
+        const executionTime = endTime - startTime;
 
-        res.json({ results: filteredDocuments });
+        // Log or display the execution time
+        console.log('Execution time:', executionTime, 'milliseconds');
+
+        res.json({ results: fuzzballResults });
     });
 };
 
