@@ -2,12 +2,12 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const db = require('../database/db');
-const {authenticateToken, isAdmin, isNCFUser, isNotNCFUser } = require('./authentication/middleware');
+const {authenticateToken, isAdmin, isNCFUser, isNotNCFUser } = require('../authentication/middleware');
 
 const router = express.Router();
 
 // Upload Document
-router.post('/upload', isAdmin || isNCFUser, async (req, res) => {
+router.post('/upload', isAdmin || isNCFUser, authenticateToken, async (req, res) => {
     try {
 
         const { title, author, publish_date, abstract, citation,  category_id, doctype_id, department_id, course_id } = req.body;
@@ -36,7 +36,7 @@ router.post('/upload', isAdmin || isNCFUser, async (req, res) => {
 });
 
 // Modify document
-router.put('/modify/:document_id', isAdmin || isNCFUser, async (req, res) => {
+router.put('/modify/:document_id', isAdmin || isNCFUser, authenticateToken, async (req, res) => {
     try {
         const { title, author, publish_date, abstract, citation, category_id, doctype_id, department_id, course_id } = req.body;
         const document_id = req.params.document_id;
@@ -63,7 +63,7 @@ router.put('/modify/:document_id', isAdmin || isNCFUser, async (req, res) => {
     }
 });
 
-router.delete('/delete/:document_id', isAdmin, async (req, res) => {
+router.delete('/delete/:document_id', isAdmin, authenticateToken, async (req, res) => {
     try {
         const document_id = req.params.document_id;
 

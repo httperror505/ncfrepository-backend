@@ -2,7 +2,7 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const db = require('../database/db');
-const { authenticateToken } = require('../authentication/middleware');
+const {authenticateToken, isAdmin, isNCFUser, isNotNCFUser } = require('../authentication/middleware');
 
 const router = express.Router();
 
@@ -43,7 +43,8 @@ router.post('/register', async (req, res) => {
 });
 
 
-router.get('/all', async(req, res) =>{
+router.get('/users/all', authenticateToken, async(req, res) =>{
+
     try {
         const getAllUsersQuery = 'SELECT u.user_id, u.email, u.name, u.role_id, r.role_name FROM user u JOIN role r ON u.role_id = r.role_id';
         const [rows] = await db.promise().execute(getAllUsersQuery);
