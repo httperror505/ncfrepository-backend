@@ -8,4 +8,4 @@ const fuzzySearch = (req, res) => {
 
 }
 
-module.exports = { fuzzySearch }
+module.exports = { fuzzySearch }    
