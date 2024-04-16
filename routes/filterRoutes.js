@@ -6,6 +6,8 @@ const {authenticateToken} = require('../authentication/middleware');
 
 const router = express.Router();
 
+// To be change ang results format ng mga functions
+
 // Browse by departments
 router.get('/browse/departments/:department_id', async(req, res) =>{
 
@@ -71,7 +73,7 @@ router.get('/browse/categories/:category_id', async(req, res) => {
 
     try {
 
-        const { category_id } = req.params.category_id;
+        const category_id = req.params.category_id;
 
         if (!category_id) {
             return res.status(400).json({error: 'Please provide category id'});

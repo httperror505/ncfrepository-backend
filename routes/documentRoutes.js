@@ -74,7 +74,7 @@ router.delete('/delete/:document_id', isAdmin, authenticateToken, async (req, re
             return res.status(404).json({error: 'Document not found!'});
         }
 
-        const deleteDocumentQuery = 'DELETE FROM document WHERE document_id = ?';
+        const deleteDocumentQuery = 'ALTER TABLE document SET status_id = 2 WHERE document_id = ?';
         await db.promise().execute(deleteDocumentQuery, [document_id]);
 
         res.status(200).json({message: 'Document Deleted Successfully'});
@@ -85,6 +85,30 @@ router.delete('/delete/:document_id', isAdmin, authenticateToken, async (req, re
     }
 });
 
+router.get('/document/all/active', async (req, res) => {
+    try {
+        const getDocumentsQuery = 'SELECT * FROM document WHERE status_id = 1';
+        const [documents] = await db.promise().execute(getDocumentsQuery);
 
+        res.status(200).json(documents);
+
+    } catch (error) {
+        console.error('Error Fetching Documents: ', error);
+        res.status(500).json({error: 'Fetch Documents Endpoint Error!'});
+    }
+});
+
+router.get('/document/all/archived', async (req, res) => {
+    try {
+        const getDocumentsQuery = 'SELECT * FROM document WHERE status_id = 0';
+        const [documents] = await db.promise().execute(getDocumentsQuery);
+
+        res.status(200).json(documents);
+
+    } catch (error) {
+        console.error('Error Fetching Documents: ', error);
+        res.status(500).json({error: 'Fetch Documents Endpoint Error!'});
+    }
+});
 
 module.exports = router;
