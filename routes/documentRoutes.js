@@ -1,113 +1,112 @@
 const express = require('express');
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-const db = require('../database/db');
-const {authenticateToken, isAdmin, isNCFUser, isNotNCFUser } = require('../authentication/middleware');
-
+const multer = require('multer');
+const fs = require('fs');
+const path = require('path');
 const router = express.Router();
+const db = require('../database/db');
 
-// Upload Document
-router.post('/upload', isAdmin || isNCFUser, authenticateToken, async (req, res) => {
+// Directory where files will be uploaded
+const uploadDir = path.resolve(__dirname, '../uploads');
+
+// Ensure upload directory exists
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+// Configure multer for file uploads with file filter
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, uploadDir);
+    },
+    filename: (req, file, cb) => {
+        cb(null, `${Date.now()}-${file.originalname}`);
+    },
+});
+
+const fileFilter = (req, file, cb) => {
+    if (file.mimetype === 'application/pdf') {
+        cb(null, true);
+    } else {
+        cb(new Error('Invalid file type, only PDFs are allowed!'), false);
+    }
+};
+
+const upload = multer({ storage, fileFilter });
+
+router.post('/upload', upload.single('file'), async (req, res) => {
     try {
-
-        const { title, author, publish_date, abstract, citation,  category_id, doctype_id, department_id, course_id } = req.body;
-
-        if (!title || !author || !publish_date || !abstract || !citation || !category_id || !doctype_id || !department_id || !course_id) {
-            return res.status(400).json({error: 'Please fill in all fields!'});
+        if (!req.file) {
+            return res.status(400).json({ error: 'Invalid file type, only PDFs are allowed!' });
         }
 
-        const checkTitleQuery = 'SELECT title FROM document WHERE title = ?';
-        const [existingDocument] = await db.promise().execute(checkTitleQuery, [title]);
+        const { title, authors, categories, keywords, abstract } = req.body;
+        const filename = req.file.filename;
 
+        // Check if title already exists
+        const [existingDocument] = await db.promise().execute('SELECT title FROM researches WHERE title = ?', [title]);
         if (existingDocument.length > 0) {
-            return res.status(409).json({error: 'Document with this title already exists!'});
+            return res.status(409).json({ error: 'Document with this title already exists!' });
         }
 
-        const insertDocumentQuery = 'INSERT INTO document (title, author, publish_date, abstract, citation, category_id, doctype_id, department_id, course_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
-        await db.promise().execute(insertDocumentQuery, [title, author, publish_date, abstract, citation, category_id, doctype_id, department_id, course_id]);
+        // Insert research
+        const [result] = await db.promise().execute('INSERT INTO researches (title, publish_date, abstract, filename) VALUES (?, NOW(), ?, ?)', [title, abstract, filename]);
+        const researchId = result.insertId;
 
-        res.status(201).json({message: 'Document Uploaded Successfully'});
+        // Insert authors
+        const insertAuthors = async (researchId, authors) => {
+            const authorNames = authors.split(',').map(name => name.trim());
+            for (const name of authorNames) {
+                let [author] = await db.promise().execute('SELECT author_id FROM authors WHERE author_name = ?', [name]);
+                if (author.length === 0) {
+                    const [result] = await db.promise().execute('INSERT INTO authors (author_name) VALUES (?)', [name]);
+                    author = { author_id: result.insertId };
+                } else {
+                    author = author[0];
+                }
+                await db.promise().execute('INSERT INTO research_authors (research_id, author_id) VALUES (?, ?)', [researchId, author.author_id]);
+            }
+        };
 
+        await insertAuthors(researchId, authors);
+
+        // Insert categories
+        const insertCategories = async (researchId, categories) => {
+            const categoryNames = categories.split(',').map(name => name.trim());
+            for (const name of categoryNames) {
+                let [category] = await db.promise().execute('SELECT category_id FROM category WHERE category_name = ?', [name]);
+                if (category.length === 0) {
+                    const [result] = await db.promise().execute('INSERT INTO category (category_name) VALUES (?)', [name]);
+                    category = { category_id: result.insertId };
+                } else {
+                    category = category[0];
+                }
+                await db.promise().execute('INSERT INTO research_categories (research_id, category_id) VALUES (?, ?)', [researchId, category.category_id]);
+            }
+        };
+
+        await insertCategories(researchId, categories);
+
+        // Insert keywords
+        const insertKeywords = async (researchId, keywords) => {
+            const keywordNames = keywords.split(',').map(name => name.trim());
+            for (const name of keywordNames) {
+                let [keyword] = await db.promise().execute('SELECT keyword_id FROM keywords WHERE keyword_name = ?', [name]);
+                if (keyword.length === 0) {
+                    const [result] = await db.promise().execute('INSERT INTO keywords (keyword_name) VALUES (?)', [name]);
+                    keyword = { keyword_id: result.insertId };
+                } else {
+                    keyword = keyword[0];
+                }
+                await db.promise().execute('INSERT INTO research_keywords (research_id, keyword_id) VALUES (?, ?)', [researchId, keyword.keyword_id]);
+            }
+        };
+
+        await insertKeywords(researchId, keywords);
+
+        res.status(201).json({ message: 'Document Uploaded Successfully' });
     } catch (error) {
-        console.error('Error Upload Document: ', error);
-        res.status(500).json({error: 'Pload Document Endpoint Error!'});
-    }
-
-});
-
-// Modify document
-router.put('/modify/:document_id', isAdmin || isNCFUser, authenticateToken, async (req, res) => {
-    try {
-        const { title, author, publish_date, abstract, citation, category_id, doctype_id, department_id, course_id } = req.body;
-        const document_id = req.params.document_id;
-
-        if (!title || !author || !publish_date || !abstract || !citation || !category_id || !doctype_id || !department_id || !course_id) {
-            return res.status(400).json({error: 'Please fill in all fields!'});
-        }
-
-        const checkDocumentQuery = 'SELECT * FROM document WHERE document_id = ?';
-        const [existingDocument] = await db.promise().execute(checkDocumentQuery, [document_id]);
-
-        if (existingDocument.length === 0) {
-            return res.status(404).json({error: 'Document not found!'});
-        }
-
-        const updateDocumentQuery = 'UPDATE document SET title = ?, author = ?, publish_date = ?, abstract = ?, citation = ?, category_id = ?, doctype_id = ?, department_id = ?, course_id = ? WHERE document_id = ?';
-        await db.promise().execute(updateDocumentQuery, [title, author, publish_date, abstract, citation, category_id, doctype_id, department_id, course_id, document_id]);
-
-        res.status(200).json({message: 'Document Modified Successfully'});
-
-    } catch (error) {
-        console.error('Error Modifying Document: ', error);
-        res.status(500).json({error: 'Modify Document Endpoint Error!'});
-    }
-});
-
-router.delete('/delete/:document_id', isAdmin, authenticateToken, async (req, res) => {
-    try {
-        const document_id = req.params.document_id;
-
-        const checkDocumentQuery = 'SELECT * FROM document WHERE document_id = ?';
-        const [existingDocument] = await db.promise().execute(checkDocumentQuery, [document_id]);
-
-        if (existingDocument.length === 0) {
-            return res.status(404).json({error: 'Document not found!'});
-        }
-
-        const deleteDocumentQuery = 'ALTER TABLE document SET status_id = 2 WHERE document_id = ?';
-        await db.promise().execute(deleteDocumentQuery, [document_id]);
-
-        res.status(200).json({message: 'Document Deleted Successfully'});
-
-    } catch (error) {
-        console.error('Error Deleting Document: ', error);
-        res.status(500).json({error: 'Delete Document Endpoint Error!'});
-    }
-});
-
-router.get('/document/all/active', async (req, res) => {
-    try {
-        const getDocumentsQuery = 'SELECT * FROM document WHERE status_id = 1';
-        const [documents] = await db.promise().execute(getDocumentsQuery);
-
-        res.status(200).json(documents);
-
-    } catch (error) {
-        console.error('Error Fetching Documents: ', error);
-        res.status(500).json({error: 'Fetch Documents Endpoint Error!'});
-    }
-});
-
-router.get('/document/all/archived', async (req, res) => {
-    try {
-        const getDocumentsQuery = 'SELECT * FROM document WHERE status_id = 0';
-        const [documents] = await db.promise().execute(getDocumentsQuery);
-
-        res.status(200).json(documents);
-
-    } catch (error) {
-        console.error('Error Fetching Documents: ', error);
-        res.status(500).json({error: 'Fetch Documents Endpoint Error!'});
+        console.error('Error Upload Document:', error);
+        res.status(500).json({ error: 'Upload Document Endpoint Error!' });
     }
 });
 

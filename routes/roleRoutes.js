@@ -11,7 +11,7 @@ const router = express.Router();
 // retrieve all roles
 router.get('/roles/all', async(req, res) =>{
     try{
-        const getAllRolesQuery = 'SELECT role_id, role_name FROM role';
+        const getAllRolesQuery = 'SELECT role_id, role_name FROM roles';
         const[rows] = await db.promise().execute(getAllRolesQuery);
 
         res.status(200).json({roles: rows});

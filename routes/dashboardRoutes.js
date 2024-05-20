@@ -8,14 +8,14 @@ const router = express.Router();
 
 // Citations Management
 // Increment citation count for each document
-router.post('/citations/:document_id', (req, res) => {
+router.patch('/citations/:research_id', (req, res) => {
 
-    const documentId = req.params.document_id;
+    const researchId = req.params.research_id;
 
     // Update citation count in the database
-    const updateQuery = 'UPDATE document SET citation_count = citation_count + 1 WHERE document_id = ?';
+    const updateQuery = 'UPDATE researches SET citeCount = citeCount + 1 WHERE research_id = ?';
 
-    db.query(updateQuery, [documentId], (error, result) => {
+    db.query(updateQuery, [researchId], (error, result) => {
 
         if (error) {
             console.error('Error updating citation count:', error);
@@ -27,20 +27,22 @@ router.post('/citations/:document_id', (req, res) => {
 });
 
 // Get the citation count of a document
-router.get('/citations/admin/:document_id', isAdmin, (req, res) => {
+router.get('/citations/:research_id', (req, res) => {
 
-    const documentId = req.params.document_id;
+    const researchId = req.params.research_id;
 
     // Get the citation count from the database
-    const getCitedQuery = 'SELECT citation_count FROM document WHERE document_id = ?';
+    const getCitedQuery = 'SELECT citeCount FROM researches WHERE research_id = ?';
 
-    db.query(getCitedQuery, [documentId], (error, result) => {
+    db.query(getCitedQuery, [researchId], (error, result) => {
 
         if (error) {
             console.error('Error getting citation count:', error);
             res.status(500).json({ error: 'An error occurred while getting citation count' });
+        } else if (result.length === 0) {
+            res.status(404).json({ error: 'Document not found' });
         } else {
-            res.status(200).json({ citationCount: result[0].citation_count });
+            res.status(200).json({ citationCount: result[0].citeCount });
         }
     });
 
@@ -50,7 +52,7 @@ router.get('/citations/admin/:document_id', isAdmin, (req, res) => {
 router.get('/citations', (req, res) => {
 
     // Get the citation count from the database
-    const getCitedQuery = 'SELECT document_id, citation_count FROM document';
+    const getCitedQuery = 'SELECT research_id, citeCount FROM researches';
 
     db.query(getCitedQuery, (error, result) => {
 
@@ -64,72 +66,93 @@ router.get('/citations', (req, res) => {
 
 });
 
-// Get the citation count of all documents and total it to 1 result
-router.get('/citations/total', (req, res) => {
-    
-    // Get the citation count from the database
-    const getTotalCitesQuery = 'SELECT document_id, citation_count FROM document';
+// Get the total citation count of all documents
+router.post('/total/citations', (req, res) => {
+    // Use SQL to sum the citation counts
+    const getTotalCitesQuery = 'SELECT SUM(citeCount) AS totalCitation FROM researches';
 
     db.query(getTotalCitesQuery, (error, result) => {
-
         if (error) {
             console.error('Error getting total citation count:', error);
             res.status(500).json({ error: 'An error occurred while getting total citation count' });
         } else {
-            let totalCitation = 0;
-            result.forEach((document) => {
-                totalCitation += document.citation_count;
-            });
+            const totalCitation = result[0].totalCitation || 0; // Handle case where result is NULL
             res.status(200).json({ totalCitation });
         }
-    });
-
-});
-
-// Get the citation count of the document if the user is the uploader/author
-// Note: Not Working!!
-router.get('/citations/user/:document_id', authenticateToken, (req, res) => {
-    const documentId = req.params.document_id;
-    const userId = req.user.id; // Assuming the user ID is stored in req.user.id after authentication
-
-    // Check if the logged-in user is the author of the document
-    const checkAuthorQuery = 'SELECT author_id FROM document WHERE document_id = ?';
-    db.query(checkAuthorQuery, [documentId], (error, result) => {
-        if (error) {
-            console.error('Error checking document author:', error);
-            return res.status(500).json({ error: 'An error occurred while checking document author' });
-        }
-
-        // If the document doesn't exist
-        if (result.length === 0) {
-            return res.status(404).json({ error: 'Document not found' });
-        }
-
-        const authorId = result[0].author_id;
-
-        // Check if the logged-in user is the author of the document
-        if (authorId !== userId) {
-            return res.status(403).json({ error: 'Forbidden: You are not the author of this document' });
-        }
-
-        // Get the citation count from the database
-        const getCitedQuery = 'SELECT citation_count FROM document WHERE document_id = ?';
-        db.query(getCitedQuery, [documentId], (error, result) => {
-            if (error) {
-                console.error('Error getting citation count:', error);
-                return res.status(500).json({ error: 'An error occurred while getting citation count' });
-            }
-
-            if (result.length === 0) {
-                return res.status(404).json({ error: 'Document not found' });
-            }
-
-            res.status(200).json({ citationCount: result[0].citation_count });
-        });
     });
 });
 
 
 // Downloads Count Management
+// Increment download count for each document
+router.post('/downloads/:research_id', (req, res) => {
+
+    const researchId = req.params.research_id;
+
+    // Update citation count in the database
+    const updateQuery = 'UPDATE researches SET downloadCount = downloadCount + 1 WHERE research_id = ?';
+
+    db.query(updateQuery, [researchId], (error, result) => {
+
+        if (error) {
+            console.error('Error updating download count:', error);
+            res.status(500).json({ error: 'An error occurred while updating download count' });
+        } else {
+            res.status(200).json({ message: 'Download count updated successfully' });
+        }
+    });
+});
+
+// Get the download count of a document
+router.get('/downloads/:research_id', (req, res) => {
+    const researchId = req.params.research_id;
+
+    const getDownloadedQuery = 'SELECT downloadCount FROM researches WHERE research_id = ?';
+
+    db.query(getDownloadedQuery, [researchId], (error, result) => {
+        if (error) {
+            console.error('Error getting download count:', error);
+            res.status(500).json({ error: 'An error occurred while getting download count' });
+        } else if (result.length === 0) {
+            res.status(404).json({ error: 'Document not found' });
+        } else {
+            res.status(200).json({ downloadCount: result[0].downloadCount });
+        }
+    });
+});
+
+
+// Get the download count of all documents
+router.get('/downloads', (req, res) => {
+
+    // Get the citation count from the database
+    const getDownloadedQuery = 'SELECT research_id, downloadCount FROM researches';
+
+    db.query(getDownloadedQuery, (error, result) => {
+
+        if (error) {
+            console.error('Error getting total download count:', error);
+            res.status(500).json({ error: 'An error occurred while getting total download count' });
+        } else {
+            res.status(200).json(result);
+        }
+    });
+
+});
+
+router.post('/total/downloads', (req, res) => {
+    // Use SQL to sum the download counts
+    const getTotalDownloadsQuery = 'SELECT SUM(downloadCount) AS totalDownloads FROM researches';
+
+    db.query(getTotalDownloadsQuery, (error, result) => {
+        if (error) {
+            console.error('Error getting total download count:', error);
+            res.status(500).json({ error: 'An error occurred while getting total download count' });
+        } else {
+            const totalDownloads = result[0].totalDownloads || 0;
+            res.status(200).json({ totalDownloads });
+        }
+    });
+});
 
 module.exports = router;
