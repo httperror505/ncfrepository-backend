@@ -3,6 +3,8 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const db = require('../database/db');
 const {authenticateToken, isAdmin, isNCFUser, isNotNCFUser } = require('../authentication/middleware');
+const nodemailer = require('nodemailer');
+const sgMail = require('@sendgrid/mail');
 
 const router = express.Router();
 
@@ -109,5 +111,131 @@ router.put('/:user_id', async (req, res) =>{
         res.status(500).json({error: 'User Update Endpoint Error!'});
     }
 });
+
+// update user password
+
+// Forgot password with otp sender
+// Forgot password with otp sender
+// router.post('/forgot-password', async (req, res) => {
+//     try {
+//         const { email } = req.body;
+
+//         if (!email) {
+//             return res.status(400).json({ error: 'Missing required fields' });
+//         }
+
+//         const checkUserQuery = 'SELECT * FROM users WHERE email = ?';
+//         const [userRows] = await db.promise().execute(checkUserQuery, [email]);
+
+//         if (userRows.length === 0) {
+//             return res.status(404).json({ error: 'User not found' });
+//         }
+
+//         const user = userRows[0];
+//         const otp = Math.floor(100000 + Math.random() * 900000);
+//         const hashedOtp = await bcrypt.hash(otp.toString(), 10);
+
+//         if (!user.user_id || !hashedOtp) {
+//             console.error('Error: Missing required parameters for SQL query.');
+//             return res.status(500).json({ error: 'Internal Server Error' });
+//         }
+
+//         const updateOtpQuery = 'UPDATE users SET otp = ? WHERE user_id = ?';
+//         await db.promise().execute(updateOtpQuery, [hashedOtp, user.user_id]);
+
+//         if (!process.env.EMAIL || !process.env.PASSWORD) {
+//             console.error('Error: Missing email credentials in environment variables.');
+//             return res.status(500).json({ error: 'Internal Server Error' });
+//         }
+
+//         const transporter = nodemailer.createTransport({
+//             service: 'gmail',
+//             auth: {
+//                 user: process.env.EMAIL,
+//                 pass: process.env.PASSWORD
+//             }
+//         });
+
+//         const mailOptions = {
+//             from: process.env.EMAIL,
+//             to: email,
+//             subject: 'Forgot Password OTP',
+//             text: `Your OTP is: ${otp}`
+//         };
+
+//         transporter.sendMail(mailOptions, (error, info) => {
+//             if (error) {
+//                 console.error('Error sending OTP email:', error);
+//                 return res.status(500).json({ error: 'Forgot Password OTP Email Error!' });
+//             } else {
+//                 console.log('OTP email sent:', info.response);
+//                 return res.status(200).json({ message: 'OTP sent successfully' });
+//             }
+//         });
+
+//     } catch (error) {
+//         console.error('Error changing password:', error);
+//         return res.status(500).json({ error: 'Forgot Password Change Endpoint Error!' });
+//     }
+// });
+
+// Forgot password with otp sender
+router.post('/forgot-password', async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({ error: 'Missing required fields' });
+        }
+
+        const checkUserQuery = 'SELECT * FROM users WHERE email = ?';
+        const [userRows] = await db.promise().execute(checkUserQuery, [email]);
+
+        if (userRows.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        const user = userRows[0];
+        const otp = Math.floor(100000 + Math.random() * 900000);
+        const hashedOtp = await bcrypt.hash(otp.toString(), 10);
+
+        if (!user.user_id || !hashedOtp) {
+            console.error('Error: Missing required parameters for SQL query.');
+            return res.status(500).json({ error: 'Internal Server Error' });
+        }
+
+        const updateOtpQuery = 'UPDATE users SET otp = ? WHERE user_id = ?';
+        await db.promise().execute(updateOtpQuery, [hashedOtp, user.user_id]);
+
+        if (!process.env.SENDGRID_API_KEY) {
+            console.error('Error: Missing SendGrid API key in environment variables.');
+            return res.status(500).json({ error: 'Internal Server Error' });
+        }
+
+        const msg = {
+            to: email,
+            from: process.env.EMAIL,  // Verified sender email
+            subject: 'Forgot Password OTP',
+            text: `Your OTP is: ${otp}`,
+        };
+
+        sgMail.send(msg)
+            .then(() => {
+                console.log('OTP email sent');
+                return res.status(200).json({ message: 'OTP sent successfully' });
+            })
+            .catch(error => {
+                console.error('Error sending OTP email:', error);
+                return res.status(500).json({ error: 'Forgot Password OTP Email Error!' });
+            });
+
+    } catch (error) {
+        console.error('Error changing password:', error);
+        return res.status(500).json({ error: 'Forgot Password Change Endpoint Error!' });
+    }
+});
+
+
+
 
 module.exports = router;
