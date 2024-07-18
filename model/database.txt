@@ -1,1 +1,214 @@
-: )
+SHOW DATABASES;
+CREATE DATABASE ncfrepo_new;
+USE ncfrepo_new;
+SHOW TABLES;
+
+CREATE TABLE IF NOT EXISTS roles (
+	role_id INT AUTO_INCREMENT PRIMARY KEY NOT NULL,
+    role_name VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS program (
+	program_id INT AUTO_INCREMENT PRIMARY KEY NOT NULL,
+    program_name VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS users (
+	user_id INT AUTO_INCREMENT PRIMARY KEY NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    password VARCHAR(100) NOT NULL,
+    email VARCHAR(100) NOT NULL,
+    role_id INT NOT NULL,
+    program_id INT,
+    CONSTRAINT fk_role FOREIGN KEY (role_id) REFERENCES roles (role_id),
+    CONSTRAINT fk_program FOREIGN KEY (program_id) REFERENCES program (program_id)
+);
+alter table users add column otp VARCHAR(6);
+select * from users;
+
+CREATE TABLE IF NOT EXISTS authors (
+    author_id INT AUTO_INCREMENT PRIMARY KEY NOT NULL,
+    author_name VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS category (
+    category_id INT AUTO_INCREMENT PRIMARY KEY NOT NULL,
+    category_name VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS keywords (
+    keyword_id INT AUTO_INCREMENT PRIMARY KEY NOT NULL,
+    keyword_name VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS researches (
+    research_id INT AUTO_INCREMENT PRIMARY KEY NOT NULL,
+    title VARCHAR(300) NOT NULL,
+    publish_date DATE NOT NULL,
+    abstract TEXT NOT NULL,
+    filename VARCHAR(255) NOT NULL,
+    status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
+    viewCount INT DEFAULT 0 NOT NULL,
+    downloadCount INT DEFAULT 0 NOT NULL,
+    citeCount INT DEFAULT 0 NOT NULL
+);
+select * from researches;
+
+CREATE TABLE IF NOT EXISTS research_categories (
+    research_id INT NOT NULL,
+    category_id INT NOT NULL,
+    PRIMARY KEY (research_id, category_id),
+    CONSTRAINT fk_research_category FOREIGN KEY (research_id) REFERENCES researches (research_id),
+    CONSTRAINT fk_category_category FOREIGN KEY (category_id) REFERENCES category (category_id)
+);
+
+CREATE TABLE IF NOT EXISTS research_authors (
+    research_id INT NOT NULL,
+    author_id INT NOT NULL,
+    PRIMARY KEY (research_id, author_id),
+    CONSTRAINT fk_research_author FOREIGN KEY (research_id) REFERENCES researches (research_id),
+    CONSTRAINT fk_author_author FOREIGN KEY (author_id) REFERENCES authors (author_id)
+);
+
+CREATE TABLE IF NOT EXISTS research_keywords (
+    research_id INT NOT NULL,
+    keyword_id INT NOT NULL,
+    PRIMARY KEY (research_id, keyword_id),
+    CONSTRAINT fk_research_keyword FOREIGN KEY (research_id) REFERENCES researches (research_id),
+    CONSTRAINT fk_keyword_keyword FOREIGN KEY (keyword_id) REFERENCES keywords (keyword_id)
+);
+-- Inserting data into the category table
+INSERT INTO category (category_name) VALUES 
+('College of Computer Studies'),
+('College of Health and Sciences'),
+('College of Criminal Justice Education'),
+('College of Engineering'),
+('College of Arts and Sciences'),
+('College of Business and Management'),
+('College of Accountancy and Finance'),
+('College of Teacher Education'),
+('Graduate Studies');
+
+-- Inserting data into the keywords table
+INSERT INTO keywords (keyword_name) VALUES 
+('Technology'),
+('Artificial Intelligence'),
+('Business'),
+('Political Science'),
+('Statistics'),
+('Biology'),
+('Chemistry'),
+('Medicine'),
+('Psychology'),
+('Education'),
+('Sociology'),
+('Economics');
+
+-- Inserting data into the authors table
+INSERT INTO authors (author_name) VALUES 
+('John Doe'),
+('Jane Smith'),
+('Michael Johnson'),
+('Emily Davis'),
+('Chris Brown'),
+('Amanda Wilson'),
+('David Martinez'),
+('Sarah Thompson'),
+('Robert Garcia'),
+('Jennifer Lee');
+
+-- Inserting data into the researches table
+INSERT INTO researches (title, publish_date, abstract, filename, status) VALUES 
+('The Impact of Artificial Intelligence on Business Processes', '2023-05-20', 'This research explores the various ways in which AI technologies are transforming traditional business operations.', 'ai_business_impact.pdf', 'approved'),
+('A Study on the Effects of Technology Integration in Education', '2022-11-15', 'This study investigates the outcomes of incorporating technology into classroom instruction and its influence on student learning outcomes.', 'technology_education_study.pdf', 'approved'),
+('The Role of Statistics in Data Analysis', '2024-02-10', 'This paper examines the significance of statistical methods in analyzing and interpreting data across various disciplines.', 'statistics_data_analysis.pdf', 'pending'),
+('Political Trends in the 21st Century', '2023-09-08', 'An analysis of the evolving political landscape and trends shaping global governance in the modern era.', 'political_trends_21st_century.pdf', 'approved'),
+('Advancements in Medicine: A Review of Recent Breakthroughs', '2024-04-30', 'This research reviews recent advancements in medical science and their potential impact on healthcare practices.', 'medicine_breakthroughs_review.pdf', 'approved'),
+('The Impact of Renewable Energy on Sustainable Development', '2023-08-15', 'This research examines the role of renewable energy sources in promoting sustainable development goals across different sectors.', 'renewable_energy_sustainability.pdf', 'approved'),
+('Gender Disparities in STEM Education: A Comparative Study', '2024-01-25', 'A comparative analysis of gender disparities in STEM education and strategies for promoting inclusivity and diversity in science, technology, engineering, and mathematics fields.', 'stem_gender_disparities.pdf', 'approved');
+
+-- Inserting data into the research_authors table
+INSERT INTO research_authors (research_id, author_id) VALUES 
+(1, 1), -- John Doe
+(1, 5), -- Chris Brown
+(2, 2), -- Jane Smith
+(2, 3), -- Michael Johnson
+(3, 4), -- Emily Davis
+(4, 6), -- Amanda Wilson
+(6, 1), -- John Doe
+(6, 2), -- Jane Smith
+(6, 3), -- Michael Johnson
+(7, 4), -- Emily Davis
+(7, 5), -- Chris Brown
+(5, 7); -- David Martinez
+
+-- Inserting data into the research_keywords table
+INSERT INTO research_keywords (research_id, keyword_id) VALUES 
+(1, 2), -- Artificial Intelligence
+(1, 3), -- Business
+(2, 9), -- Education
+(3, 5), -- Statistics
+(4, 4), -- Political Science
+(6, 1), -- Technology
+(6, 11), -- Sociology
+(7, 9), -- Education
+(7, 10), -- Psychology
+(5, 8); -- Medicine
+
+SELECT
+    r.research_id,
+    r.title,
+    r.publish_date,
+    r.abstract,
+    r.filename,
+    a.author_id,
+    a.author_name,
+    k.keyword_id,
+    k.keyword_name
+FROM
+    researches r
+JOIN
+    research_authors ra ON r.research_id = ra.research_id
+JOIN
+    authors a ON ra.author_id = a.author_id
+JOIN
+    research_keywords rk ON r.research_id = rk.research_id
+JOIN
+    keywords k ON rk.keyword_id = k.keyword_id
+WHERE
+    r.status = 'approved';
+
+-- Inserting data into the researches table with multiple authors
+INSERT INTO researches (title, publish_date, abstract, filename, status) VALUES 
+('Augmented Reailty for Teaching Anatomy', '2025-08-15', 'This research examines the role of augmented reality in promoting anatamoty education goals across different sectors.', 'augmented_reality.pdf', 'approved'),
+('CodeDap: A Code Analyzing Tool', '2025-01-25', 'A comparative analysis of programming languages in CCS education and strategies for promoting inclusivity and diversity in science, technology, engineering, and mathematics fields.', 'CodeDap.pdf', 'approved');
+SELECT * from researches;
+SELECT * from authors;
+SELECT * FROM category;
+INSERT INTO authors (author_name) VALUES 
+('Mj Estepanie Palo'),
+('Gracia Jra Villanueva'),
+('Jeffrey Agdoro');
+-- Inserting data into the research_authors table for research with multiple authors
+INSERT INTO research_authors (research_id, author_id) VALUES 
+(8, 11),
+(8, 12),
+(9, 13);
+
+-- Inserting data into the research_keywords table for research with multiple authors
+INSERT INTO research_keywords (research_id, keyword_id) VALUES 
+(8, 1), -- Technology
+(9, 1), -- Sociology
+(8, 9); -- Education
+
+INSERT INTO program (program_name) 
+VALUES
+('Bachelor of Science in Computer Science'),
+('Bachelor of Science in Inforamtion Systems'),
+('Bachelor of Science in Inforamtion Technology');
+
+SELECT * FROM users;
+SELECT u.user_id, u.name, u.email, u.role_id, r.role_name, p.program_name
+FROM users u
+JOIN roles r ON u.role_id = r.role_id
+LEFT JOIN program p ON u.program_id = p.program_id;
