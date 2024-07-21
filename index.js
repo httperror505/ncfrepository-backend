@@ -22,6 +22,7 @@ const documentRoutes = require("./routes/Content Management/uploadRoutes");
 const adminRoutes = require("./routes/Admin/adminRoutes");
 // Browse Filter
 const filterRoutes = require("./routes/Content Filtering/browseRoutes");
+const mostRoutes = require("./routes/Content Filtering/mostRoutes");
 // Dashboard
 const dashboardRoutes = require("./routes/Content Management/dashboardRoutes");
 require("dotenv").config();
@@ -46,6 +47,7 @@ app.use(adminRoutes);
 
 // Browse Filter
 app.use(filterRoutes);
+app.use(mostRoutes);
 
 // Dashboard such as Citations Adding
 app.use(dashboardRoutes);

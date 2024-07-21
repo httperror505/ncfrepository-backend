@@ -1,30 +1,32 @@
-auth routes
-login - done
+Routes Summary
 
-user routes
-register - done
-change password - for testing
-forgot password(send otp to email) - for testing
+1. auth routes
+login - done @ Auth/auth routes
 
-open access
-search - working @ search routes
-filter search - for testing @ filter routes
-most viewed
-most downloaded
-most cited
+2. user routes
+register - done/tested @ user management/user routes
+change password - for testing @ user management/user routes
+forgot password(send otp to email) - for testing @ user management/user routes
+
+3. open access
+search - done @ search engine/search routes
+filter search - for testing @ content filtering/browse routes
 browse by dept -  for testing @ filter routes
 browse by keywords -  for testing @ filter routes
+most viewed - done/tested @ content filtering/most routes
+most downloaded - done/tested
+most cited - done/tested
 
 @ Filter routes
 endpoint to feth all authors and query for dropdowns in upload
 
-ordinary user access - content management
-upload
-see uploaded documents
-see the download, view, cite count of the uploads - done except view
+4. ordinary user access - content management
+upload - done/for testing @ content management/upload routes
+see uploaded documents - not yet started @ content management/upload routes
+see the download, view, cite count of each user's uploads - done/tested @ content management/dashboard routes
 cite, download, view count incrementation - done except view
 
-admin access - admin
+5. admin access - admin
 accept/decline upload - for testing
-see all documents in the repo - done
-see all the total views, downloads, citations - done except view
+see all documents in the repo - done/tested @ admin/admin routes
+see all the total views, downloads, citations - done/tested @ admin/admin routes
