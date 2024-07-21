@@ -1,0 +1,30 @@
+auth routes
+login - done
+
+user routes
+register - done
+change password - for testing
+forgot password(send otp to email) - for testing
+
+open access
+search - working @ search routes
+filter search - for testing @ filter routes
+most viewed
+most downloaded
+most cited
+browse by dept -  for testing @ filter routes
+browse by keywords -  for testing @ filter routes
+
+@ Filter routes
+endpoint to feth all authors and query for dropdowns in upload
+
+ordinary user access - content management
+upload
+see uploaded documents
+see the download, view, cite count of the uploads - done except view
+cite, download, view count incrementation - done except view
+
+admin access - admin
+accept/decline upload - for testing
+see all documents in the repo - done
+see all the total views, downloads, citations - done except view

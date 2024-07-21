@@ -12,18 +12,18 @@ const {
   isNotNCFUser,
 } = require("./authentication/middleware");
 // User Management
-const roleRoutes = require("./routes/roleRoutes");
-const userRoutes = require("./routes/userRoutes");
-const authRoutes = require("./routes/authRoutes");
+const roleRoutes = require("./routes/Admin/roleRoutes");
+const userRoutes = require("./routes/User Management/userRoutes");
+const authRoutes = require("./routes/Auth/authRoutes");
 // Algorithm
-const searchRoutes = require("./routes/searchRoutes");
+const searchRoutes = require("./routes/Search Engine/searchRoutes");
 // CRUD Documents
-const documentRoutes = require("./routes/documentRoutes");
-const adminRoutes = require("./routes/adminRoutes");
+const documentRoutes = require("./routes/Content Management/uploadRoutes");
+const adminRoutes = require("./routes/Admin/adminRoutes");
 // Browse Filter
-const filterRoutes = require("./routes/filterRoutes");
+const filterRoutes = require("./routes/Content Filtering/browseRoutes");
 // Dashboard
-const dashboardRoutes = require("./routes/dashboardRoutes");
+const dashboardRoutes = require("./routes/Content Management/dashboardRoutes");
 require("dotenv").config();
 
 const app = express();

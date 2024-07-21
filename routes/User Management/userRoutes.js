@@ -123,4 +123,72 @@ router.post('/forgot-password', async (req, res) => {
     }
 });
 
+router.get('/users/all', async(req, res) =>{
+
+    try {
+        const getAllUsersQuery = 'SELECT u.user_id, u.name, u.email, u.role_id, r.role_name, p.program_name FROM users u JOIN roles r ON u.role_id = r.role_id LEFT JOIN program p ON u.program_id = p.program_id;';
+        const [rows] = await db.promise().execute(getAllUsersQuery);
+
+        res.status(200).json({ users: rows });
+    } catch (error) {
+        console.error('Error getting users:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+router.get('/users/:user_id', async(req, res) =>{
+
+    try {
+        const userId = req.params.user_id;
+
+        if (!userId) {
+            return res.status(400).json({ error: 'Please provide user id' });
+        }
+
+        const getUserQuery = 'SELECT u.user_id, u.name, u.email, u.role_id, r.role_name, p.program_name FROM users u JOIN roles r ON u.role_id = r.role_id LEFT JOIN program p ON u.program_id = p.program_id WHERE u.user_id = ?';
+        const [rows] = await db.promise().execute(getUserQuery, [userId]);
+
+        if (rows.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        res.status(200).json({ user: rows[0] });
+    } catch (error) {
+        console.error('Error getting user:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+
+// update user by id
+router.put('/:user_id', async (req, res) =>{
+
+    try{
+
+        const userId = req.params.user_id;
+        const { name, email, password } = req.body;
+
+        const getUserQuery = 'SELECT u.user_id, u.email, u.name, u.role_id, r.role_name FROM user u JOIN role r ON u.role_id = r.role_id WHERE u.user_id = ?';
+        const [userRows] = await db.promise().execute(getUserQuery, [userId]);
+
+        if(userRows.length === 0){
+            return res.status(404).json({error: 'User not found'});
+        }
+
+        const user = userRows[0];
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const updateUserQuery = 'UPDATE user SET name = ?, email = ?, password = ? WHERE user_id = ?';
+        await db.promise().execute(updateUserQuery, [name, email, hashedPassword, userId]);
+
+        const updatedUser = { ...user, id_number, name, is_active, role_name: user.role_name };
+        res.status(200).json({ message: 'User updated successfully', user: updatedUser });
+
+    }
+    
+    catch(error){
+        console.error('Error updating user:', error);
+        res.status(500).json({error: 'User Update Endpoint Error!'});
+    }
+});
+
 module.exports = router;
