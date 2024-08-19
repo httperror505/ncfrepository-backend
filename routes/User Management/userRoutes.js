@@ -43,29 +43,32 @@ router.post('/register', async (req, res) => {
 });
 
 // Change the Password of a User
-router.patch('/user/change-password', authenticateToken, isAdmin, async (req, res) => {
+router.patch('/user/change-password', authenticateToken, async (req, res) => {
     try {
-        const { oldPassword, newPassword } = req.body;
+        const { email, oldPassword, newPassword } = req.body;
 
         if (!oldPassword || !newPassword) {
             return res.status(400).json({ error: 'Missing required fields' });
         }
 
-        const user = req.user;
+        // const user = req.user;
 
-        const checkUserQuery = 'SELECT * FROM users WHERE id = ?';
-        const [userRows] = await db.promise().execute(checkUserQuery, [user.id]);
+        const checkUserQuery = 'SELECT * FROM users WHERE email = ?';
+        const [userRows] = await db.promise().execute(checkUserQuery, [email]);
+        // console.log(email, oldPassword, newPassword, userRows.password);
+        // return;
         if (userRows.length === 0) {
             return res.status(404).json({ error: 'User not found' });
         }
+        // console.log(userRows[0].password);
         // const user = userRows[0];
-        const passwordMatch = await bcrypt.compare(oldPassword, user.password);
+        const passwordMatch = await bcrypt.compare(oldPassword, userRows[0].password);
         if (!passwordMatch) {
             return res.status(401).json({ error: 'Incorrect password' });
         }
         const hashedPassword = await bcrypt.hash(newPassword, 10);
-        const updatePasswordQuery = 'UPDATE users SET password = ? WHERE id = ?';
-        await db.promise().execute(updatePasswordQuery, [hashedPassword, user.id]);
+        const updatePasswordQuery = 'UPDATE users SET password = ? WHERE email = ?';
+        await db.promise().execute(updatePasswordQuery, [hashedPassword, email]);
         res.status(200).json({ message: 'Password changed successfully' }); 
     }
     catch (error) {
@@ -126,7 +129,7 @@ router.post('/forgot-password', async (req, res) => {
 router.get('/users/all', async(req, res) =>{
 
     try {
-        const getAllUsersQuery = 'SELECT u.user_id, u.name, u.email, u.role_id, r.role_name, p.program_name FROM users u JOIN roles r ON u.role_id = r.role_id LEFT JOIN program p ON u.program_id = p.program_id;';
+        const getAllUsersQuery = 'SELECT u.user_id, u.name, u.email, u.role_id, u.password, r.role_name, p.program_name FROM users u JOIN roles r ON u.role_id = r.role_id LEFT JOIN program p ON u.program_id = p.program_id;';
         const [rows] = await db.promise().execute(getAllUsersQuery);
 
         res.status(200).json({ users: rows });
