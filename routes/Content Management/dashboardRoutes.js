@@ -103,8 +103,28 @@ router.get("/downloads/:research_id", (req, res) => {
 router.post("/views/:research_id", (req, res) => {
   const researchId = req.params.research_id;
 
-  
+  const getViewCountQuery = "SELECT viewCount FROM researches WHERE research_id = ?";
 
+  db.query(getViewCountQuery, [researchId], (error, result) => {
+    if (error) {
+      console.error("Error getting view count:", error);
+      res
+        .status(500)
+        .json({ error: "An error occurred while getting view count" });
+    } else if (result.length === 0) {
+      res.status(404).json({ error: "Document not found" });
+    } else {
+      const viewCount = result[0].viewCount;
+      const updatedViewCount = viewCount + 1;
+      const updateViewCountQuery = "UPDATE researches SET viewCount = ? WHERE research_id = ?";
+      db.query(updateViewCountQuery, [updatedViewCount, researchId], (error, result) => {
+        if (error) {
+          console.error("Error updating view count:", error);
+        }
+      });
+      res.status(200).json({ message: "View count updated successfully" });
+    }
+  });
 });
 
 
