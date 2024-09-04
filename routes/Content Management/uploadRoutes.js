@@ -116,4 +116,28 @@ router.post('/upload', upload.single('file'), async (req, res) => {
     }
 });
 
+// Add author
+router.post('/add-author', async (req, res) => {
+    try {
+        const { author_name } = req.body;
+
+        // Check if author already exists
+        const [existingAuthor] = await db.promise().execute('SELECT author_name FROM authors WHERE author_name = ?', [author_name]);
+        if (existingAuthor.length > 0) {
+            return res.status(409).json({ error: 'Author with this name already exists!' });
+        }   
+
+        // Insert author
+        const [result] = await db.promise().execute('INSERT INTO authors (author_name) VALUES (?)', [author_name]);
+        const authorId = result.insertId;
+
+        res.status(201).json({ message: 'Author Added Successfully', authorId });
+    } catch (error) {
+        console.error('Error Add Author:', error);
+        res.status(500).json({ error: 'Add Author Endpoint Error!' });
+    }
+});
+
+
+
 module.exports = router;

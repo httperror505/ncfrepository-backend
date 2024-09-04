@@ -119,7 +119,7 @@ router.get('/authors', async (req, res) => {
 });
 
 // Endpoint to fetch keywords based on query
-router.get('/keywords', async (req, res) => {
+router.get('/keywords/', async (req, res) => {
   try {
       const { query } = req.query;
       const [keywords] = await db.promise().query('SELECT keyword_name FROM keywords WHERE keyword_name LIKE ?', [`%${query}%`]);
@@ -129,6 +129,29 @@ router.get('/keywords', async (req, res) => {
       res.status(500).json({ error: 'Failed to fetch keywords' });
   }
 });
+
+// Route to get all authors
+router.get('/all/authors', async (req, res) => {
+    try {
+        const [authors] = await db.promise().execute('SELECT author_id, author_name FROM authors');
+        res.json(authors);
+    } catch (error) {
+        console.error('Error fetching authors:', error);
+        res.status(500).json({ error: 'Error fetching authors' });
+    }
+});
+
+// Route to get all keywords
+router.get('/all/keywords', async (req, res) => {
+    try {
+        const [keywords] = await db.promise().execute('SELECT keyword_id, keyword_name FROM keywords');
+        res.json(keywords);
+    } catch (error) {
+        console.error('Error fetching keywords:', error);
+        res.status(500).json({ error: 'Error fetching keywords' });
+    }
+});
+
 
 
 module.exports = router;

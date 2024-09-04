@@ -77,7 +77,11 @@ router.get("/research/:research_id", async (req, res) => {
 // View all researches
 router.get("/researches", async (req, res) => {
   try {
-    const [researches] = await db.promise().execute("SELECT * FROM researches");
+    const [researches] = await db
+      .promise()
+      .execute(
+        "SELECT r.research_id, r.title, r.publish_date, r.abstract, r.filename, GROUP_CONCAT(DISTINCT a.author_name) AS authors, GROUP_CONCAT(DISTINCT k.keyword_name) AS keywords, r.viewCount, r.downloadCount, r.citeCount FROM researches r LEFT JOIN research_authors ra ON r.research_id = ra.research_id LEFT JOIN authors a ON ra.author_id = a.author_id LEFT JOIN research_keywords rk ON r.research_id = rk.research_id LEFT JOIN keywords k ON rk.keyword_id = k.keyword_id WHERE r.status = 'approved' GROUP BY r.research_id, r.title, r.publish_date, r.abstract, r.filename ORDER BY r.title"
+      );
     res.status(200).json(researches);
   } catch (error) {
     console.error("Error getting researches:", error);
@@ -113,11 +117,9 @@ router.post("/total/citations", (req, res) => {
   db.query(getTotalCitesQuery, (error, result) => {
     if (error) {
       console.error("Error getting total citation count:", error);
-      res
-        .status(500)
-        .json({
-          error: "An error occurred while getting total citation count",
-        });
+      res.status(500).json({
+        error: "An error occurred while getting total citation count",
+      });
     } else {
       const totalCitation = result[0].totalCitation || 0; // Handle case where result is NULL
       res.status(200).json({ totalCitation });
@@ -152,11 +154,9 @@ router.post("/total/downloads", (req, res) => {
   db.query(getTotalDownloadsQuery, (error, result) => {
     if (error) {
       console.error("Error getting total download count:", error);
-      res
-        .status(500)
-        .json({
-          error: "An error occurred while getting total download count",
-        });
+      res.status(500).json({
+        error: "An error occurred while getting total download count",
+      });
     } else {
       const totalDownloads = result[0].totalDownloads || 0;
       res.status(200).json({ totalDownloads });
