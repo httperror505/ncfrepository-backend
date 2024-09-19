@@ -11,6 +11,7 @@ const db = mysql.createConnection({
 db.connect((err) => {
     if (err) {
         console.log('NCF Repository Database: Connection Fail');
+        console.log(err);
     } else {
         console.log('NCF Repository Database: Connection OK');
     }
