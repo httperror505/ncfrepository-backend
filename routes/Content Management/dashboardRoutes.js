@@ -100,7 +100,7 @@ router.get("/downloads/:research_id", (req, res) => {
 
 // View Count Management
 // Increment view count for each document
-router.post("/views/:research_id", (req, res) => {
+router.patch("/views/:research_id", (req, res) => {
   const researchId = req.params.research_id;
 
   const getViewCountQuery = "SELECT viewCount FROM researches WHERE research_id = ?";
