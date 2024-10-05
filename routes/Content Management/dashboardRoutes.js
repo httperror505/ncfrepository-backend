@@ -57,7 +57,7 @@ router.get("/citations/:research_id", (req, res) => {
 
 // Downloads Count Management
 // Increment download count for each document
-router.post("/downloads/:research_id", (req, res) => {
+router.patch("/downloads/:research_id", (req, res) => {
   const researchId = req.params.research_id;
 
   // Update citation count in the database
