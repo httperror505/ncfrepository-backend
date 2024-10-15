@@ -68,8 +68,10 @@ router.post("/register", async (req, res) => {
 
 // Change the Password of a User
 router.patch("/user/change-password", async (req, res) => {
+  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
   try {
-    const { email, oldPassword, newPassword } = req.body;
+    const { email, oldPassword, newPassword, sentOTP } = req.body;
 
     if (!oldPassword || !newPassword) {
       return res.status(400).json({ error: "Missing required fields" });
@@ -79,6 +81,11 @@ router.patch("/user/change-password", async (req, res) => {
     const checkUserQuery = "SELECT * FROM users WHERE email = ?";
     const [userRows] = await db.promise().execute(checkUserQuery, [email]);
     const user = userRows[0];
+
+    // Get otp
+    const getOtpQuery = "SELECT otp FROM users WHERE email = ?";
+    const [otpRows] = await db.promise().execute(getOtpQuery, [email]);
+    const otp = otpRows[0].otp;
 
     if (userRows.length === 0) {
       return res.status(404).json({ error: "User not found" });
@@ -90,7 +97,17 @@ router.patch("/user/change-password", async (req, res) => {
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     const updatePasswordQuery = "UPDATE users SET password = ? WHERE email = ?";
     const clearOtpQuery = "UPDATE users SET otp = NULL WHERE email = ?";
-    // Update the password
+    // Compare both OTP strings
+    if (otp !== sentOTP) {
+      return res.status(401).json({ error: "Incorrect OTP" });
+    } 
+    // Update the password if the OTP is correct
+    // const otpMatch = await bcrypt.compare(otp, sentOTP);
+    // Compare both string OTP
+    // const otpMatch = otp === sentOTP;
+    // if (!otpMatch) {
+    //   return res.status(401).json({ error: "Incorrect OTP" });
+    // }
     await db.promise().execute(updatePasswordQuery, [hashedPassword, email]);
     // Clear the OTP
     await db.promise().execute(clearOtpQuery, [email]);
@@ -98,6 +115,97 @@ router.patch("/user/change-password", async (req, res) => {
   } catch (error) {
     console.error("Error changing password:", error);
     res.status(500).json({ error: "Password Change Endpoint Error!" });
+  }
+});
+
+// router.patch("/user/change-password", async (req, res) => {
+//   sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+//   try {
+//     const { email, oldPassword, newPassword, sentOTP } = req.body;
+
+//     if (!oldPassword || !newPassword || !sentOTP) {
+//       return res.status(400).json({ error: "Missing required fields" });
+//     }
+
+//     // Check if user with the same email exists
+//     const checkUserQuery = "SELECT * FROM users WHERE email = ?";
+//     const [userRows] = await db.promise().execute(checkUserQuery, [email]);
+//     if (userRows.length === 0) {
+//       return res.status(404).json({ error: "User not found" });
+//     }
+//     const user = userRows[0];
+
+//     // Get OTP from database
+//     const getOtpQuery = "SELECT otp FROM users WHERE email = ?";
+//     const [otpRows] = await db.promise().execute(getOtpQuery, [email]);
+//     const otp = otpRows[0]?.otp;
+
+//     // Early return if OTP is missing
+//     if (!otp) {
+//       return res.status(400).json({ error: "OTP not found" });
+//     }
+
+//     // Compare both OTP strings
+//     if (otp !== sentOTP) {
+//       return res.status(401).json({ error: "Incorrect OTP" });
+//     }
+
+//     // Check if old password is correct
+//     const passwordMatch = await bcrypt.compare(oldPassword, user.password);
+//     if (!passwordMatch) {
+//       return res.status(401).json({ error: "Incorrect password" });
+//     }
+
+//     // Hash the new password and update the user's password
+//     const hashedPassword = await bcrypt.hash(newPassword, 10);
+//     const updatePasswordQuery = "UPDATE users SET password = ? WHERE email = ?";
+//     await db.promise().execute(updatePasswordQuery, [hashedPassword, email]);
+
+//     // Clear the OTP
+//     const clearOtpQuery = "UPDATE users SET otp = NULL WHERE email = ?";
+//     await db.promise().execute(clearOtpQuery, [email]);
+
+//     res.status(200).json({ message: "Password changed successfully" });
+//   } catch (error) {
+//     console.error("Error changing password:", error);
+//     res.status(500).json({ error: "Password Change Endpoint Error!" });
+//   }
+// });
+
+
+// Otp sender
+router.patch("/otp/change-password", async (req, res) => {
+  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+  const { email } = req.body;
+
+  try {
+    // Send otp to confirm the password change
+    const otp = Math.floor(100000 + Math.random() * 900000);
+    const updateOtpQuery = "UPDATE users SET otp = ? WHERE email = ?";
+    await db.promise().execute(updateOtpQuery, [otp, email]);
+    const msg = {
+      to: email, // Change to your recipient
+      from: "ncfresearchnexus@gmail.com", // Change to your verified sender
+      subject: "One-time Password for Password Reset",
+      //   text: otp.toString(),
+      //   html: "<strong>{otp}</strong>",
+      text: `Your OTP is: ${otp}`,
+      html: `<strong>Your OTP is: ${otp}</strong>`,
+    };
+    sgMail
+      .send(msg)
+      .then(() => {
+        console.log("Email sent");
+        res.status(200).json({ message: "OTP sent successfully" });
+      })
+      .catch((error) => {
+        console.error(error);
+      });
+  } catch (error) {   
+    console.error("Error sending OTP for changing password:", error);
+    res.status(500).json({ error: "OTP Password Change Endpoint Error!" });
   }
 });
 
