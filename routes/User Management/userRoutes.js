@@ -40,6 +40,7 @@ router.post("/register", async (req, res) => {
       .execute(checkUserByEmailQuery, [email]);
 
     if (existingUserByEmailRows.length > 0) {
+      console.log("User with this email already exists");
       return res
         .status(409)
         .json({ error: "User with this email already exists" });
