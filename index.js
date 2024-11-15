@@ -15,6 +15,7 @@ const {
 const roleRoutes = require("./routes/Admin/roleRoutes");
 const userRoutes = require("./routes/User Management/userRoutes");
 const authRoutes = require("./routes/Auth/authRoutes");
+const googleAuthRoutes = require("./routes/User Management/googleLogin");
 // Algorithm
 const searchRoutes = require("./routes/Search Engine/searchRoutes");
 // CRUD Documents
@@ -40,6 +41,7 @@ app.use("/search", searchRoutes);
 app.use(roleRoutes);
 app.use(userRoutes);
 app.use(authRoutes);
+app.use(googleAuthRoutes);
 
 // CRUD Documents
 app.use(documentRoutes);

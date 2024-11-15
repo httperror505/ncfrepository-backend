@@ -30,7 +30,7 @@ router.post('/login', async (req, res) => {
             return res.status(401).json({ error: 'Invalid ID number or password' });
         }
 
-        const token = jwt.sign({ userId: user.user_id, email: user.email, name: user.name, roleId: user.role_id }, process.env.SECRET_KEY, { expiresIn: '1h' });
+        const token = jwt.sign({ userId: user.user_id, email: user.email, lastName: user.last_name, firstName: user.first_name, roleId: user.role_id }, process.env.SECRET_KEY, { expiresIn: '1h' });
 
         res.status(200).json({ token, userId: user.user_id, roleId: user.role_id});
     } catch (error) {

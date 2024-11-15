@@ -29,6 +29,7 @@
     "express": "^4.19.2",
     "fuse.js": "^7.0.0",
     "fuzzball": "^2.1.2",
+    "google-auth-library": "^9.14.2",
     "jsonwebtoken": "^9.0.2",
     "multer": "^1.4.5-lts.1",
     "mysql": "^2.18.1",

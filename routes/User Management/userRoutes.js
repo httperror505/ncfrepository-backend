@@ -15,9 +15,17 @@ const router = express.Router();
 // Register a User
 router.post("/register", async (req, res) => {
   try {
-    const { name, email, password, role_id } = req.body;
+    const {
+      last_name,
+      first_name,
+      middle_name,
+      suffix,
+      email,
+      password,
+      role_id,
+    } = req.body;
 
-    if (!name || !email || !password || !role_id) {
+    if ((!last_name || !first_name || !email || !password || !role_id)) {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
@@ -49,11 +57,14 @@ router.post("/register", async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const insertUserQuery =
-      "INSERT INTO users (name, email, password, role_id, program_id) VALUES (?, ?, ?, ?, ?)";
+      "INSERT INTO users (last_name, first_name, middle_name, suffix, email, password, role_id, program_id) VALUES (?, ?, ?, ?, ?, ?, ? ,?)";
     await db
       .promise()
       .execute(insertUserQuery, [
-        name,
+        last_name,
+        first_name,
+        middle_name,
+        suffix,
         email,
         hashedPassword,
         role_id,
@@ -101,7 +112,7 @@ router.patch("/user/change-password", async (req, res) => {
     // Compare both OTP strings
     if (otp !== sentOTP) {
       return res.status(401).json({ error: "Incorrect OTP" });
-    } 
+    }
     // Update the password if the OTP is correct
     // const otpMatch = await bcrypt.compare(otp, sentOTP);
     // Compare both string OTP
@@ -174,8 +185,57 @@ router.patch("/user/change-password", async (req, res) => {
 //   }
 // });
 
-
 // Otp sender
+router.post("/otp/send-email", async (req, res) => {
+  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+  const { email } = req.body;
+
+  try {
+    const otp = Math.floor(100000 + Math.random() * 900000);
+    const updateOtpQuery = "UPDATE users SET otp = ? WHERE email = ?";
+    await db.promise().execute(updateOtpQuery, [otp, email]);
+    const msg = {
+      to: email, // Change to your recipient
+      from: "jrtolosa@gbox.ncf.edu.ph", // Change to your verified sender
+      subject: "One-time Password for Email Verification",
+      html: `
+    <div style="font-family: Arial, sans-serif; color: #333;">
+      <div style="text-align: center; padding: 20px;">
+        <img src="https://ncf.edu.ph/wp-content/uploads/2024/04/ncf_logo-300x300.png" alt="Research Nexus Logo" width="60" style="margin-bottom: 20px;" />
+      </div>
+      <p>It looks like you are trying to create an account using this email address. As an additional security measure, you are requested to enter the OTP code (one-time password) provided in this email.</p>
+      <p>If you did not intend to log in to npm, please ignore this email.</p>
+      <div style="padding: 10px 20px; background-color: #f2f2f2; border-radius: 4px; text-align: center; margin: 20px 0;">
+        <p style="font-size: 18px; color: #333;">The OTP code is:</p>
+        <p style="font-size: 24px; font-weight: bold; color: #333;">${otp}</p>
+      </div>
+      
+      <p>If you have any questions or concerns, please feel free to <a href="https://ccs-research-repository.vercel.app/">visit out our official website.</a>.</p>
+
+      <footer style="text-align: center; font-size: 12px; color: #777; margin-top: 30px;">
+        <p>All rights reserved. NCF Research Nexus, Naga College Foundation.</p>
+      </footer>
+    </div>
+  `,
+    };
+    sgMail
+      .send(msg)
+      .then(() => {
+        console.log("OTP email sent");
+        // Respond the otp to the client
+        res.status(200).json({ otp });
+      })
+      .catch((error) => {
+        console.error("Error sending OTP email:", error);
+        res.status(500).json({ error: "SGMail Endpoint Error!" });
+      });
+  } catch (error) {
+    console.error("Error sending OTP:", error);
+    res.status(500).json({ error: "OTP Email Endpoint Error!" });
+  }
+});
+
 router.patch("/otp/change-password", async (req, res) => {
   sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
@@ -204,7 +264,7 @@ router.patch("/otp/change-password", async (req, res) => {
       .catch((error) => {
         console.error(error);
       });
-  } catch (error) {   
+  } catch (error) {
     console.error("Error sending OTP for changing password:", error);
     res.status(500).json({ error: "OTP Password Change Endpoint Error!" });
   }
@@ -282,7 +342,7 @@ router.post("/forgot-password", async (req, res) => {
 router.get("/users/all", async (req, res) => {
   try {
     const getAllUsersQuery =
-      "SELECT u.user_id, u.name, u.email, u.role_id, u.password, r.role_name, p.program_name FROM users u JOIN roles r ON u.role_id = r.role_id LEFT JOIN program p ON u.program_id = p.program_id;";
+      "SELECT u.user_id, u.last_name, u.first_name, u.middle_name, u.suffix, u.email, u.role_id, u.password, r.role_name, p.program_name FROM users u JOIN roles r ON u.role_id = r.role_id LEFT JOIN program p ON u.program_id = p.program_id;";
     const [rows] = await db.promise().execute(getAllUsersQuery);
 
     res.status(200).json({ users: rows });
@@ -301,7 +361,7 @@ router.get("/users/:user_id", async (req, res) => {
     }
 
     const getUserQuery =
-      "SELECT u.user_id, u.name, u.email, u.role_id, r.role_name, p.program_name FROM users u JOIN roles r ON u.role_id = r.role_id LEFT JOIN program p ON u.program_id = p.program_id WHERE u.user_id = ?";
+      "SELECT u.user_id, u.last_name, u.first_name, u.middle_name, u.suffix, u.email, u.role_id, r.role_name, p.program_name FROM users u JOIN roles r ON u.role_id = r.role_id LEFT JOIN program p ON u.program_id = p.program_id WHERE u.user_id = ?";
     const [rows] = await db.promise().execute(getUserQuery, [userId]);
 
     if (rows.length === 0) {
@@ -352,5 +412,6 @@ router.put("/:user_id", async (req, res) => {
     res.status(500).json({ error: "User Update Endpoint Error!" });
   }
 });
+
 
 module.exports = router;

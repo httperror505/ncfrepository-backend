@@ -47,7 +47,7 @@ router.post("/upload", upload.single("file"), async (req, res) => {
         .json({ error: "Invalid file type, only PDFs are allowed!" });
     }
 
-    const { title, authors, categories, keywords, abstract } = req.body;
+    const { title, authors, categories, keywords, abstract, uploader_id } = req.body;
     const filename = req.file.filename;
 
     // Check if title already exists
@@ -64,8 +64,8 @@ router.post("/upload", upload.single("file"), async (req, res) => {
     const [result] = await db
       .promise()
       .execute(
-        "INSERT INTO researches (title, publish_date, abstract, filename) VALUES (?, NOW(), ?, ?)",
-        [title, abstract, filename]
+        "INSERT INTO researches (title, publish_date, abstract, filename, uploader_id) VALUES (?, NOW(), ?, ?, ?)",
+        [title, abstract, filename, uploader_id]
       );
     const researchId = result.insertId;
 
