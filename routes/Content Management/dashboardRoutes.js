@@ -167,5 +167,22 @@ router.get("/research/get/:uploader_id", (req, res) => {
   });
 });
 
+// Add to collection
+router.post("/add-to-collection", async (req, res) => {
+  try {
+    const { research_id, user_id } = req.body;
+
+    const addToCollectionQuery = `
+      INSERT INTO collection_researches (research_id, user_id )
+      VALUES (?, ?)
+    `;
+    await db.promise().execute(addToCollectionQuery, [research_id, user_id]);
+
+    res.status(200).json({ message: "Document added to collection successfully" });
+  } catch (error) {
+    console.error("Error adding document to collection:", error);
+    res.status(500).json({ error: "Collection Endoint Error" });
+  }
+});
 
 module.exports = router;
