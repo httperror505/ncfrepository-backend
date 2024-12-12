@@ -127,5 +127,62 @@ router.patch("/views/:research_id", (req, res) => {
   });
 });
 
+//  Get the research for the specified uploader_id
+router.get("/research/get/:uploader_id", (req, res) => {
+  const uploaderId = req.params.uploader_id;
+
+  // const getResearchQuery = "SELECT * FROM researches WHERE uploader_id = ?";
+  const getResearchQuery =`SELECT 
+        r.research_id, 
+        r.title, 
+        r.publish_date, 
+        r.abstract, 
+        r.filename, 
+        GROUP_CONCAT(DISTINCT a.author_name) AS authors, 
+        GROUP_CONCAT(DISTINCT k.keyword_name) AS keywords, 
+        r.viewCount, 
+        r.downloadCount, 
+        r.citeCount,
+        r.uploader_id
+        FROM researches r 
+        LEFT JOIN research_authors ra ON r.research_id = ra.research_id 
+        LEFT JOIN authors a ON ra.author_id = a.author_id 
+        LEFT JOIN research_keywords rk ON r.research_id = rk.research_id 
+        LEFT JOIN keywords k ON rk.keyword_id = k.keyword_id 
+        WHERE r.uploader_id = ?
+        GROUP BY r.research_id, r.title, r.publish_date, r.abstract, r.filename 
+        ORDER BY r.title`;
+  
+  db.query(getResearchQuery, [uploaderId], (error, result) => {
+    if (error) {
+      console.error("Error getting research:", error);
+      res
+        .status(500)
+        .json({ error: "An error occurred while getting research" });
+    } else if (result.length === 0) {
+      res.status(404).json({ error: "Research not found" });
+    } else {
+      res.status(200).json(result);
+    }
+  });
+});
+
+// Add to collection
+router.post("/add-to-collection", async (req, res) => {
+  try {
+    const { research_id, user_id } = req.body;
+
+    const addToCollectionQuery = `
+      INSERT INTO collection_researches (research_id, user_id )
+      VALUES (?, ?)
+    `;
+    await db.promise().execute(addToCollectionQuery, [research_id, user_id]);
+
+    res.status(200).json({ message: "Document added to collection successfully" });
+  } catch (error) {
+    console.error("Error adding document to collection:", error);
+    res.status(500).json({ error: "Collection Endoint Error" });
+  }
+});
 
 module.exports = router;
