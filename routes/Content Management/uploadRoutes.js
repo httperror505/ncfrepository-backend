@@ -12,7 +12,7 @@ const path = require("path");
 const router = express.Router();
 
 // Directory where files will be uploaded
-const uploadDir = path.resolve(__dirname, "../../uploads");
+const uploadDir = path.resolve(__dirname, "./uploads/documents");
 
 // Ensure upload directory exists
 if (!fs.existsSync(uploadDir)) {
@@ -25,7 +25,7 @@ const storage = multer.diskStorage({
     cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
-    cb(null, `${Date.now()}-${file.originalname}`);
+    cb(null, `${file.originalname}`);
   },
 });
 
@@ -47,7 +47,8 @@ router.post("/upload", upload.single("file"), async (req, res) => {
         .json({ error: "Invalid file type, only PDFs are allowed!" });
     }
 
-    const { title, authors, categories, keywords, abstract, uploader_id } = req.body;
+    const { title, authors, categories, keywords, abstract, uploader_id } =
+      req.body;
     const filename = req.file.filename;
 
     // Check if title already exists
@@ -58,6 +59,32 @@ router.post("/upload", upload.single("file"), async (req, res) => {
       return res
         .status(409)
         .json({ error: "Document with this title already exists!" });
+    }
+
+    // Validate uploader_id (you may want to add more validation)
+    if (!uploader_id || isNaN(uploader_id)) {
+      return res.status(400).json({ error: "Invalid uploader ID!" });
+    }
+
+    // Check the roleId of the uploader
+    const [uploader] = await db.query(
+      "SELECT role_id FROM users WHERE user_id = ?",
+      [uploader_id]
+    );
+    if (uploader.length === 0) {
+      return res.status(404).json({ error: "Uploader not found!" });
+    }
+
+    const role_id = uploader[0].role_id;
+    console.log("Uploader roleId:", role_id); // Debugging step to log the roleId
+
+    // Set the default status
+    let status = "pending";
+    if (role_id === 1) {
+      console.log("Uploader is Admin, setting status to approved"); // Debugging step
+      status = "approved";
+    } else {
+      console.log("Uploader is not Admin, setting status to pending"); // Debugging step
     }
 
     // Insert research
@@ -101,7 +128,7 @@ router.post("/upload", upload.single("file"), async (req, res) => {
     const insertCategories = async (researchId, categories) => {
       const categoryNames = categories.split(",").map((name) => name.trim());
       for (const name of categoryNames) {
-        let [category] = await db
+        let [category] = await dbz
           .promise()
           .execute("SELECT category_id FROM category WHERE category_name = ?", [
             name,
