@@ -193,8 +193,8 @@ router.post("/otp/send-email", async (req, res) => {
 
   try {
     const otp = Math.floor(100000 + Math.random() * 900000);
-    const updateOtpQuery = "UPDATE users SET otp = ? WHERE email = ?";
-    await db.promise().execute(updateOtpQuery, [otp, email]);
+    // const updateOtpQuery = "UPDATE users SET otp = ? WHERE email = ?";
+    // await db.promise().execute(updateOtpQuery, [otp, email]);
     const msg = {
       to: email, // Change to your recipient
       from: "jrtolosa@gbox.ncf.edu.ph", // Change to your verified sender
