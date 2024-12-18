@@ -126,7 +126,7 @@ router.get("/citations", (req, res) => {
   });
 });
 // Get the total citation count of all documents
-router.post("/total/citations", (req, res) => {
+router.get("/total/citations", (req, res) => {
   // Use SQL to sum the citation counts
   const getTotalCitesQuery =
     "SELECT SUM(citeCount) AS totalCitation FROM researches";
@@ -163,7 +163,7 @@ router.get("/downloads", (req, res) => {
   });
 });
 // Get the total download count of all documents
-router.post("/total/downloads", (req, res) => {
+router.get("/total/downloads", (req, res) => {
   // Use SQL to sum the download counts
   const getTotalDownloadsQuery =
     "SELECT SUM(downloadCount) AS totalDownloads FROM researches";
@@ -199,7 +199,7 @@ router.get("/views", (req, res) => {
   });
 });
 // Get the total view count of all documents
-router.post("/total/views", (req, res) => {
+router.get("/total/views", (req, res) => {
   // Use SQL to sum the view counts
   const getTotalViewsQuery =
     "SELECT SUM(viewCount) AS totalViews FROM researches";
