@@ -10,6 +10,18 @@ const {
 } = require("./../../authentication/middleware");
 const router = express.Router();
 
+// Browse all categories
+router.get('/categories/all', async (req, res) => {
+  try {
+    const getAllCategoriesQuery = "SELECT * FROM category";
+    const [categories] = await db.promise().execute(getAllCategoriesQuery);
+    res.status(200).json({ categories });
+  } catch (err) {
+    console.error("Error getting categories:", err);
+    res.status(500).json({ error: "All Categories Endpoint Error!" });
+  }
+})
+
 // Browse by category
 router.get("/category/:category_id", async (req, res) => {
   try {
