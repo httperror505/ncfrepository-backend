@@ -144,6 +144,7 @@ router.get("/research/get/:uploader_id", (req, res) => {
         r.viewCount, 
         r.downloadCount, 
         r.citeCount,
+        r.status,
         r.uploader_id
         FROM researches r 
         LEFT JOIN research_authors ra ON r.research_id = ra.research_id 
