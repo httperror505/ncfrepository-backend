@@ -140,6 +140,7 @@ router.get("/research/get/:uploader_id", (req, res) => {
         r.filename, 
         GROUP_CONCAT(DISTINCT a.author_name) AS authors, 
         GROUP_CONCAT(DISTINCT k.keyword_name) AS keywords, 
+        GROUP_CONCAT(DISTINCT c.category_name) AS categories,
         r.viewCount, 
         r.downloadCount, 
         r.citeCount,
@@ -149,6 +150,8 @@ router.get("/research/get/:uploader_id", (req, res) => {
         LEFT JOIN authors a ON ra.author_id = a.author_id 
         LEFT JOIN research_keywords rk ON r.research_id = rk.research_id 
         LEFT JOIN keywords k ON rk.keyword_id = k.keyword_id 
+        LEFT JOIN research_categories rc ON r.research_id = rc.research_id
+        LEFT JOIN category c ON rc.category_id = c.category_id
         WHERE r.uploader_id = ?
         GROUP BY r.research_id, r.title, r.publish_date, r.abstract, r.filename 
         ORDER BY r.title`;
@@ -184,5 +187,9 @@ router.post("/add-to-collection", async (req, res) => {
     res.status(500).json({ error: "Collection Endoint Error" });
   }
 });
+
+// Get all the researches in the collection
+
+
 
 module.exports = router;
