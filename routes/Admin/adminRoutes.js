@@ -79,25 +79,51 @@ router.get("/researches", async (req, res) => {
   try {
     const [researches] = await db.promise().execute(
       `SELECT 
-        r.research_id, 
-        r.title, 
-        r.publish_date, 
-        r.abstract, 
-        r.filename, 
-        GROUP_CONCAT(DISTINCT a.author_name) AS authors, 
-        GROUP_CONCAT(DISTINCT k.keyword_name) AS keywords, 
-        r.viewCount, 
-        r.downloadCount, 
-        r.citeCount,
-        r.uploader_id
-        FROM researches r 
-        LEFT JOIN research_authors ra ON r.research_id = ra.research_id 
-        LEFT JOIN authors a ON ra.author_id = a.author_id 
-        LEFT JOIN research_keywords rk ON r.research_id = rk.research_id 
-        LEFT JOIN keywords k ON rk.keyword_id = k.keyword_id 
-        WHERE r.status = 'approved' 
-        GROUP BY r.research_id, r.title, r.publish_date, r.abstract, r.filename 
-        ORDER BY r.title`
+          r.research_id, 
+          r.title, 
+          r.publish_date, 
+          r.abstract, 
+          r.filename, 
+          GROUP_CONCAT(DISTINCT a.author_name) AS authors, 
+          GROUP_CONCAT(DISTINCT k.keyword_name) AS keywords, 
+          c.total_cites AS citeCount,
+          d.total_downloads AS downloadCount,
+          v.total_views AS viewCount,
+          r.uploader_id,
+          r.file_privacy
+        FROM researches r
+        LEFT JOIN research_authors ra ON r.research_id = ra.research_id
+        LEFT JOIN authors a ON ra.author_id = a.author_id
+        LEFT JOIN research_keywords rk ON r.research_id = rk.research_id
+        LEFT JOIN keywords k ON rk.keyword_id = k.keyword_id
+        LEFT JOIN (
+            SELECT research_id, SUM(citation_count) AS total_cites
+            FROM citations
+            GROUP BY research_id
+        ) c ON r.research_id = c.research_id
+        LEFT JOIN (
+            SELECT research_id, SUM(download_count) AS total_downloads
+            FROM downloads
+            GROUP BY research_id
+        ) d ON r.research_id = d.research_id
+        LEFT JOIN (
+            SELECT research_id, SUM(view_count) AS total_views
+            FROM views
+            GROUP BY research_id
+        ) v ON r.research_id = v.research_id
+        WHERE r.status = 'approved'
+        GROUP BY 
+            r.research_id, 
+            r.title, 
+            r.publish_date, 
+            r.abstract, 
+            r.filename, 
+            r.uploader_id,
+            c.total_cites, 
+            d.total_downloads, 
+            v.total_views
+        ORDER BY r.title;
+        `
     );
     res.status(200).json(researches);
   } catch (error) {
@@ -129,7 +155,7 @@ router.get("/citations", (req, res) => {
 router.get("/total/citations", (req, res) => {
   // Use SQL to sum the citation counts
   const getTotalCitesQuery =
-    "SELECT SUM(citeCount) AS totalCitation FROM researches";
+    "SELECT SUM(citation_count) AS totalCitation FROM citations";
 
   db.query(getTotalCitesQuery, (error, result) => {
     if (error) {
@@ -166,7 +192,7 @@ router.get("/downloads", (req, res) => {
 router.get("/total/downloads", (req, res) => {
   // Use SQL to sum the download counts
   const getTotalDownloadsQuery =
-    "SELECT SUM(downloadCount) AS totalDownloads FROM researches";
+    "SELECT SUM(download_count) AS totalDownloads FROM downloads";
 
   db.query(getTotalDownloadsQuery, (error, result) => {
     if (error) {
@@ -202,7 +228,7 @@ router.get("/views", (req, res) => {
 router.get("/total/views", (req, res) => {
   // Use SQL to sum the view counts
   const getTotalViewsQuery =
-    "SELECT SUM(viewCount) AS totalViews FROM researches";
+    "SELECT SUM(view_count) AS totalViews FROM views";
 
   db.query(getTotalViewsQuery, (error, result) => {
     if (error) {

@@ -43,15 +43,43 @@ router.get("/category/:category_id", async (req, res) => {
     const getCategoryDocumentsQuery = `
             SELECT r.*,
             GROUP_CONCAT(DISTINCT a.author_name) AS authors, 
-            GROUP_CONCAT(DISTINCT k.keyword_name) AS keywords
+            GROUP_CONCAT(DISTINCT k.keyword_name) AS keywords,
+            GROUP_CONCAT(DISTINCT c.category_name) AS categories,
+            c.total_cites AS citeCount,
+            d.total_downloads AS downloadCount,
+            v.total_views AS viewCount
             FROM researches r 
             LEFT JOIN research_authors ra ON r.research_id = ra.research_id 
             LEFT JOIN authors a ON ra.author_id = a.author_id 
             LEFT JOIN research_keywords rk ON r.research_id = rk.research_id 
-            LEFT JOIN keywords k ON rk.keyword_id = k.keyword_id 
-            JOIN research_categories rc ON r.research_id = rc.research_id
+            LEFT JOIN keywords k ON rk.keyword_id = k.keyword_id
+            LEFT JOIN research_categories rc ON r.research_id = rc.research_id
+            LEFT JOIN category c ON rc.category_id = c.category_id
+            LEFT JOIN (
+            SELECT research_id, SUM(citation_count) AS total_cites
+            FROM citations
+            GROUP BY research_id
+            ) c ON r.research_id = c.research_id
+            LEFT JOIN (
+                SELECT research_id, SUM(download_count) AS total_downloads
+                FROM downloads
+                GROUP BY research_id
+            ) d ON r.research_id = d.research_id
+            LEFT JOIN (
+                SELECT research_id, SUM(view_count) AS total_views
+                FROM views
+                GROUP BY research_id
+            ) v ON r.research_id = v.research_id
             WHERE rc.category_id = ?
-            GROUP BY r.research_id, r.title, r.publish_date, r.abstract, r.filename 
+            GROUP BY 
+            r.research_id, 
+            r.title, 
+            r.publish_date, 
+            r.abstract, 
+            r.filename,
+            c.total_cites, 
+            d.total_downloads, 
+            v.total_views
       `;
     const [categoryDocuments] = await db
       .promise()
@@ -89,15 +117,43 @@ router.get("/keywords/:keyword_name", async (req, res) => {
     const getKeywordDocumentsQuery = `
       SELECT r.*, 
         GROUP_CONCAT(DISTINCT a.author_name) AS authors, 
-        GROUP_CONCAT(DISTINCT k.keyword_name) AS keywords
+        GROUP_CONCAT(DISTINCT k.keyword_name) AS keywords,
+        GROUP_CONCAT(DISTINCT c.category_name) AS categories,
+        c.total_cites AS citeCount,
+        d.total_downloads AS downloadCount,
+        v.total_views AS viewCount
       FROM researches r 
       LEFT JOIN research_authors ra ON r.research_id = ra.research_id 
       LEFT JOIN authors a ON ra.author_id = a.author_id 
       LEFT JOIN research_keywords rk ON r.research_id = rk.research_id 
       LEFT JOIN keywords k ON rk.keyword_id = k.keyword_id 
-      JOIN research_categories rc ON r.research_id = rc.research_id
+      LEFT JOIN research_categories rc ON r.research_id = rc.research_id
+            LEFT JOIN category c ON rc.category_id = c.category_id
+            LEFT JOIN (
+            SELECT research_id, SUM(citation_count) AS total_cites
+            FROM citations
+            GROUP BY research_id
+            ) c ON r.research_id = c.research_id
+            LEFT JOIN (
+                SELECT research_id, SUM(download_count) AS total_downloads
+                FROM downloads
+                GROUP BY research_id
+            ) d ON r.research_id = d.research_id
+            LEFT JOIN (
+                SELECT research_id, SUM(view_count) AS total_views
+                FROM views
+                GROUP BY research_id
+            ) v ON r.research_id = v.research_id
       WHERE k.keyword_name LIKE ?
-      GROUP BY r.research_id, r.title, r.publish_date, r.abstract, r.filename 
+      GROUP BY 
+            r.research_id, 
+            r.title, 
+            r.publish_date, 
+            r.abstract, 
+            r.filename,
+            c.total_cites, 
+            d.total_downloads, 
+            v.total_views
     `;
 
     // Add wildcards around the keyword_name for the LIKE clause
