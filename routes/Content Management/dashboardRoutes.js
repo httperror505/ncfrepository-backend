@@ -145,9 +145,6 @@ router.get("/research/get/:uploader_id", (req, res) => {
         GROUP_CONCAT(DISTINCT a.author_name) AS authors, 
         GROUP_CONCAT(DISTINCT k.keyword_name) AS keywords, 
         GROUP_CONCAT(DISTINCT c.category_name) AS categories,
-        r.viewCount, 
-        r.downloadCount, 
-        r.citeCount,
         r.status,
         r.uploader_id
         FROM researches r 
