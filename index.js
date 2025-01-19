@@ -26,11 +26,16 @@ const filterRoutes = require("./routes/Content Filtering/browseRoutes");
 const mostRoutes = require("./routes/Content Filtering/mostRoutes");
 // Dashboard
 const dashboardRoutes = require("./routes/Content Management/dashboardRoutes");
+// const { channel } = require("diagnostics_channel");
+const { loadDocuments } = require("./config/cache");
 require("dotenv").config();
 
 const app = express();
 app.use(bodyParser.json());
 app.use(cors());
+
+// Load documents when the server starts
+loadDocuments();
 
 const PORT = process.env.PORT;
 // const PORT = 10121;
@@ -62,3 +67,4 @@ app.get("/", (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });
+
