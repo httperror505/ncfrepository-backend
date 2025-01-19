@@ -15,9 +15,9 @@ const getSuggestions = (req, res) => {
 
   // Prepare data for Fuse.js
   const options = {
-    keys: ["title", "abstract"], // Fields to search in the documents (you can add more fields like 'authors' or 'keywords' as needed)
-    threshold: 0.4, // Adjust the threshold according to your needs
-    ignoreCase: true, // Make the search case-insensitive
+    keys: ["title", "keywords", "categories", "authors", "abstract"],
+    threshold: 0.4, // Adjust if needed hehe
+    ignoreCase: true, 
   };
 
   const fuse = new Fuse(cachedDocuments, options);

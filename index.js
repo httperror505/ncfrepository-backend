@@ -27,6 +27,8 @@ const mostRoutes = require("./routes/Content Filtering/mostRoutes");
 // Dashboard
 const dashboardRoutes = require("./routes/Content Management/dashboardRoutes");
 // const { channel } = require("diagnostics_channel");
+
+// to load documents
 const { loadDocuments } = require("./config/cache");
 require("dotenv").config();
 

@@ -21,6 +21,7 @@ router.post('/fuzzball', fuzzballController.fuzzballSearch);
 router.post('/levenshtein', LevenshteinController.Levenshtein);
 router.post('/fuzzy', fuzzySearchController.fuzzySearch);
 router.post('/manual', ManualAlgorithmController.ManualAlgorithm);
+// Fuzzy Logic
 router.post('/fuzzylogic', FuzzyLogicController.FuzzyLogic);
 
 // Authors, keywords, and institutions

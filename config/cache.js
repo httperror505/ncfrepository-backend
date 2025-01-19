@@ -28,7 +28,7 @@ function loadDocuments() {
             console.error("Error fetching documents:", err);
             return;
           }
-          cachedDocuments = rows;
+          cachedDocuments = rows; // Store the documents in memory (id, title, abstract, authors, keywords, categories)
           console.log("Documents loaded into memory");
         }
       );
