@@ -26,11 +26,35 @@ const filterRoutes = require("./routes/Content Filtering/browseRoutes");
 const mostRoutes = require("./routes/Content Filtering/mostRoutes");
 // Dashboard
 const dashboardRoutes = require("./routes/Content Management/dashboardRoutes");
+// Redis
+const redisClient = require("./database/redis");
+const loadDocumentsToRedis = require("./routes/Search Engine/redisDataLoader");
 require("dotenv").config();
 
 const app = express();
 app.use(bodyParser.json());
 app.use(cors());
+
+// Ensure Redis is connected only once
+const connectToRedis = async () => {
+  try {
+    // Check if Redis is already connected
+    if (!redisClient.isOpen) {
+      await redisClient.connect(); // Only connect if not already connected
+      console.log("Connected to Redis");
+    }
+
+    // Load documents into Redis
+    await loadDocumentsToRedis.loadDocumentsToRedis();
+  } catch (err) {
+    console.error("Error during Redis setup:", err);
+    process.exit(1); // Exit if Redis connection fails
+  }
+  
+};
+
+// Initialize Redis and load documents on server startup
+connectToRedis();
 
 const PORT = process.env.PORT;
 // const PORT = 10121;
